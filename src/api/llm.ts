@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod/v4';
-import { type AuthType, getUserFromContext } from '../lib/auth';
+import { type AuthType, auth, getUserFromContext } from '../lib/auth';
+import { prisma } from '../services/database';
 import { AuthError, AuthErrorType } from '../services/error/authError';
 import { generate, listModels } from '../services/llm/ollama';
 
@@ -9,15 +10,34 @@ const llmRouter = new Hono<{ Variables: AuthType }>({
   strict: false,
 });
 
+// Middleware to check if the user has a valid API key OR a valid cookie session
 llmRouter.use(async (c, next) => {
-  const user = getUserFromContext(c);
-  // check if the user has an api key to access LLM features
+  // check if the request has an api key to access LLM features
   const headerAPIKey = c.req.header('x-api-key');
+  // If no API key is provided, check for a session cookie
   if (!headerAPIKey) {
-    throw new AuthError(AuthErrorType.NO_API_KEY_PROVIDED);
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    // If no API key and no session, throw an error
+    if (!session) {
+      throw new AuthError(
+        AuthErrorType.UNAUTHORIZED,
+        'No valid session or API key provided',
+      );
+    }
+    c.set('user', session.user);
+    c.set('session', session.session);
   }
-  if (!user.apiKey || headerAPIKey !== user.apiKey) {
-    throw new AuthError(AuthErrorType.INVALID_API_KEY);
+  // If an API key is provided, validate it against the user's API key
+  else {
+    // const user = getUserFromContext(c);
+    // @todo we should retrieve the user from valkey(redis) or something faster than a database query
+    const user = await prisma.user.findUnique({
+      where: { apiKey: headerAPIKey },
+    });
+    // If the user does not have an API key or the provided API key does not match, throw an error
+    if (!user?.apiKey || headerAPIKey !== user.apiKey) {
+      throw new AuthError(AuthErrorType.INVALID_API_KEY);
+    }
   }
   await next();
 });
@@ -28,6 +48,20 @@ const llmRequestSchema = z.object({
   model: z.string().optional(),
   images: z.array(z.string()).optional(),
 });
+
+/**
+ * @openapi
+ * components:
+ *   parameters:
+ *     ApiKeyHeader:
+ *       in: header
+ *       type: apiKey
+ *       name: x-api-key
+ *       required: true
+ *       schema:
+ *         type: string
+ *       description: API key for authentication
+ */
 
 /**
  * @openapi
@@ -59,6 +93,9 @@ const llmRequestSchema = z.object({
  *       - LLM
  *     summary: Query a Large Language Model (LLM)
  *     description: Send a prompt to a Large Language Model and receive a response
+ *     parameters:
+ *       - $ref: '#/components/parameters/SessionCookie'
+ *       - $ref: '#/components/parameters/ApiKeyHeader'
  *     requestBody:
  *       required: true
  *       content:
@@ -98,6 +135,8 @@ llmRouter.post('/generate', async (c) => {
  *      - LLM
  *     summary: List available LLM models
  *     description: Retrieve a list of available models for querying the LLM
+ *     parameters:
+ *       - $ref: '#/components/parameters/ApiKeyHeader'
  *     responses:
  *       '200':
  *         description: Successful response with a list of models

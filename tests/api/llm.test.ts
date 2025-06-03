@@ -32,7 +32,7 @@ describe('LLM API endpoints', () => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Cookie: cookie, // Use the session cookie for authentication
+        // Cookie: cookie, // Use the session cookie for authentication
         'x-api-key': testUserApiKey, // Include the API key in the headers
       },
     });
@@ -54,7 +54,7 @@ describe('LLM API endpoints', () => {
     expect(firstModel).toHaveProperty('details');
   });
 
-  /*it('should generate a response from the LLM', async () => {
+  it('should generate a response from the LLM', async () => {
     const response = await app.request('/api/llm/generate', {
       method: 'POST',
       headers: {
@@ -76,7 +76,7 @@ describe('LLM API endpoints', () => {
     const data = await response.json();
     expect(data).toHaveProperty('response');
     expect(data.response).toBeString();
-  });*/
+  });
 
   it('should extract text from an image', async () => {
     const filePath =

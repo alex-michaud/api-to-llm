@@ -49,7 +49,9 @@ apiRouter.get('/health/api', healthHandler);
 
 apiRouter.route('/auth', authRouter);
 
-// before the authentication middleware, all routes are public
+// llm routes handle the authentication internally
+apiRouter.route('/llm', llmRouter);
+
 // Authentication middleware
 apiRouter.use(async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
@@ -60,8 +62,6 @@ apiRouter.use(async (c, next) => {
   c.set('session', session.session);
   await next();
 });
-
 // from here all routes are protected
-apiRouter.route('/llm', llmRouter);
 
 export default apiRouter;

@@ -17,6 +17,15 @@ export const auth = betterAuth({
     enabled: true,
   },
   advanced: {
+    cookies: {
+      session_token: {
+        name: 'session_token',
+        attributes: {
+          httpOnly: !config.IS_DEV,
+          secure: !config.IS_DEV,
+        },
+      },
+    },
     defaultCookieAttributes: {
       httpOnly: !config.IS_DEV, // Set to true in production for security
       secure: !config.IS_DEV, // Set to true in production for security
@@ -65,7 +74,7 @@ export const auth = betterAuth({
     preserveSessionInDatabase: false, // Preserve session records in the database when deleted from secondary storage (default: `false`)
     cookieCache: {
       enabled: true, // Enable caching session in cookie (default: `false`)
-      maxAge: 300, // 5 minutes
+      maxAge: config.IS_DEV ? 3600 : 300, // 5 minutes
     },
   },
   // hooks: {
