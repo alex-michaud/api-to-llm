@@ -26,6 +26,7 @@ llmRouter.use(async (c, next) => {
 const llmRequestSchema = z.object({
   prompt: z.string().min(1, 'Prompt is required'),
   model: z.string().optional(),
+  images: z.array(z.string()).optional(),
 });
 
 /**
@@ -41,6 +42,11 @@ const llmRequestSchema = z.object({
  *         model:
  *           type: string
  *           description: The model to use for the LLM query (optional)
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *             description: Base64 encoded image string (optional)
  *       required:
  *         - prompt
  */

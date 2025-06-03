@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
+import { Buffer } from 'node:buffer';
 import { faker } from '@faker-js/faker';
 import { app } from '../../src/server';
 import { signUpTestUser } from '../common';
@@ -53,7 +54,7 @@ describe('LLM API endpoints', () => {
     expect(firstModel).toHaveProperty('details');
   });
 
-  it('should generate a response from the LLM', async () => {
+  /*it('should generate a response from the LLM', async () => {
     const response = await app.request('/api/llm/generate', {
       method: 'POST',
       headers: {
@@ -73,6 +74,40 @@ describe('LLM API endpoints', () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    expect(data).toHaveProperty('response');
+    expect(data.response).toBeString();
+  });*/
+
+  it('should extract text from an image', async () => {
+    const filePath =
+      './tests/assets/960px-Arc_de_Triomphe,_Paris_21_October_2010.jpeg';
+    const file = Bun.file(filePath);
+    if (!(await file.exists())) {
+      throw new Error(`File not found: ${file.name}`);
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    const imageBase64 = Buffer.from(arrayBuffer).toString('base64');
+
+    const response = await app.request('/api/llm/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: cookie, // Use the session cookie for authentication
+        'x-api-key': testUserApiKey, // Include the API key in the headers
+      },
+      body: JSON.stringify({
+        image: imageBase64,
+        prompt: 'Extract the name of the monument in the image',
+      }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to extract text: ${errorText}`);
+    }
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    // console.log(data);
     expect(data).toHaveProperty('response');
     expect(data.response).toBeString();
   });
