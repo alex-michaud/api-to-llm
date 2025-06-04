@@ -3,6 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "version": "1.0.0",
   "prisma": {
     "schema": "./src/prisma/schema.prisma"
   },

@@ -3,7 +3,7 @@ import { auth } from '../src/lib/auth';
 import { prisma } from '../src/services/database';
 
 export const signUpTestUser = async ({
-  password,
+  password = 'password123',
   email,
   name = 'Test User',
   apiKey,
@@ -28,7 +28,7 @@ export const signUpTestUser = async ({
 
 export const signInTestUser = async ({
   email,
-  password,
+  password = 'password123',
 }: { email: string; password: string }) => {
   const data = await auth.api.signInEmail({
     body: {

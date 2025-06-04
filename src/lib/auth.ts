@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 // import { createAuthMiddleware } from 'better-auth/api';
-// import { bearer } from 'better-auth/plugins/bearer';
+import { bearer } from 'better-auth/plugins/bearer';
 import type { Context } from 'hono';
 import { config } from '../config';
 import { prisma } from '../services/database';
@@ -85,7 +85,7 @@ export const auth = betterAuth({
   //     }
   //   }),
   // },
-  // plugins: [bearer({ requireSignature: false })],
+  plugins: [bearer({ requireSignature: true })],
   /*databaseHooks: {
     account: {
       create: {

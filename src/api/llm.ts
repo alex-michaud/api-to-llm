@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod/v4';
-import { type AuthType, auth, getUserFromContext } from '../lib/auth';
+import { type AuthType, auth } from '../lib/auth';
 import { prisma } from '../services/database';
 import { AuthError, AuthErrorType } from '../services/error/authError';
 import { generate, listModels } from '../services/llm/ollama';
@@ -52,35 +52,39 @@ const llmRequestSchema = z.object({
 /**
  * @openapi
  * components:
- *   parameters:
- *     ApiKeyHeader:
- *       in: header
+ *   securitySchemes:
+ *     ApiKeyAuth:
  *       type: apiKey
+ *       in: header
  *       name: x-api-key
- *       required: true
- *       schema:
- *         type: string
- *       description: API key for authentication
- */
-
-/**
- * @openapi
- * components:
+ *       description: Use your API key in the `x-api-key` header
+ *     BearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       description: Use your Bearer token in the `Authorization` header
+ *     SessionCookieAuth:
+ *       type: apiKey
+ *       in: cookie
+ *       name: session_token
+ *       description: Use your session token in the `session_token` cookie in your browser or API client
  *   schemas:
- *     LLMRequest:
+ *     GenerateRequest:
  *       type: object
  *       properties:
  *         prompt:
  *           type: string
  *           description: The prompt to send to the LLM
+ *           example: "What is the capital of France?"
  *         model:
  *           type: string
  *           description: The model to use for the LLM query (optional)
+ *           example: "smollm2:135m"
  *         images:
  *           type: array
  *           items:
  *             type: string
  *             description: Base64 encoded image string (optional)
+ *             example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
  *       required:
  *         - prompt
  */
@@ -93,15 +97,16 @@ const llmRequestSchema = z.object({
  *       - LLM
  *     summary: Query a Large Language Model (LLM)
  *     description: Send a prompt to a Large Language Model and receive a response
- *     parameters:
- *       - $ref: '#/components/parameters/SessionCookie'
- *       - $ref: '#/components/parameters/ApiKeyHeader'
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *       - SessionCookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LLMRequest'
+ *             $ref: '#/components/schemas/GenerateRequest'
  *     responses:
  *       '200':
  *         description: Successful response with LLM output
@@ -135,8 +140,10 @@ llmRouter.post('/generate', async (c) => {
  *      - LLM
  *     summary: List available LLM models
  *     description: Retrieve a list of available models for querying the LLM
- *     parameters:
- *       - $ref: '#/components/parameters/ApiKeyHeader'
+ *     security:
+ *      - ApiKeyAuth: []
+ *      - BearerAuth: []
+ *      - SessionCookieAuth: []
  *     responses:
  *       '200':
  *         description: Successful response with a list of models

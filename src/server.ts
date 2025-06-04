@@ -36,6 +36,7 @@ app.get(
   swaggerUI({
     url: '/docs/openapi.json',
     spec: openapiSpec,
+    tryItOutEnabled: true,
   }),
 );
 

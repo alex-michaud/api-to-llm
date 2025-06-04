@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { type User, prisma } from '../src/services/database';
 
-export async function getApiKey(userId: string | undefined): Promise<void> {
+async function getApiKey(userId: string | undefined): Promise<void> {
   let user: User;
   if (!userId) {
     // Create a new test user if no user ID is provided

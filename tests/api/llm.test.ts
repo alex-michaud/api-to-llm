@@ -10,7 +10,7 @@ let cookie: string;
 
 describe('LLM API endpoints', () => {
   beforeAll(async () => {
-    testUserPassword = faker.internet.password();
+    testUserPassword = 'password123'; // Use a fixed password for testing
     testUserApiKey = faker.string.uuid();
     const testUserObject = {
       email: faker.internet.email().toLocaleLowerCase(),

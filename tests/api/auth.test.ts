@@ -5,12 +5,14 @@ import { app } from '../../src/server';
 let testPassword: string;
 let testEmail: string;
 let testName: string;
+let testApiKey: string;
 
 describe('Auth API endpoints', () => {
   beforeAll(async () => {
-    testPassword = faker.internet.password();
+    testPassword = 'password123'; // Use a fixed password for testing
     testEmail = faker.internet.email().toLocaleLowerCase();
     testName = faker.person.fullName();
+    testApiKey = faker.string.uuid();
   });
 
   it('should sign up a user', async () => {
@@ -18,6 +20,7 @@ describe('Auth API endpoints', () => {
       email: testEmail,
       password: testPassword,
       name: testName,
+      apiKey: testApiKey,
     };
     const response = await app.request('/api/auth/sign-up/email', {
       method: 'POST',
