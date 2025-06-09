@@ -19,6 +19,14 @@ export const routingErrorHandler = (err: unknown, c: Context) => {
     for (const issue of err.issues) {
       message += `${issue.path[0]} ${issue.message.toLowerCase()}. `;
     }
+    logger.debug(
+      {
+        type: 'ZodError',
+        stack: err.stack,
+        issues: err.issues,
+      },
+      message,
+    );
     return c.json(
       {
         message,
@@ -29,14 +37,15 @@ export const routingErrorHandler = (err: unknown, c: Context) => {
     );
   }
   if (err instanceof BetterAuthAPIError) {
-    logger.debug(err.message, {
-      extra: {
+    logger.debug(
+      {
         type: 'BetterAuthAPIError',
         stack: err.stack,
         cause: err.cause,
         name: err.name,
       },
-    });
+      err.message,
+    );
     // check if the error.statusCode is a valid ContentfulStatusCode
     if (err.statusCode && typeof err.statusCode === 'number') {
       return c.json(
@@ -47,12 +56,13 @@ export const routingErrorHandler = (err: unknown, c: Context) => {
     return c.json({ message: err.message }, 500);
   }
   if (err instanceof PrismaClientInitializationError) {
-    logger.debug(err.message, {
-      extra: {
+    logger.debug(
+      {
         type: 'PrismaClientInitializationError',
         stack: err.stack,
       },
-    });
+      err.message,
+    );
     return c.json({ message: err.message }, 500);
   }
   if (err instanceof PrismaClientKnownRequestError) {
@@ -68,12 +78,39 @@ export const routingErrorHandler = (err: unknown, c: Context) => {
     return c.json({ message: err.message }, 400);
   }
   if (err instanceof HTTPException) {
+    logger.debug(
+      {
+        type: 'HTTPException',
+        stack: err.stack,
+        cause: err.cause,
+        name: err.name,
+      },
+      err.message,
+    );
     return c.json({ message: err.message }, err.status);
   }
   if (err instanceof AuthError) {
+    logger.debug(
+      {
+        type: 'AuthError',
+        stack: err.stack,
+        cause: err.cause,
+        name: err.name,
+      },
+      err.message,
+    );
     return c.json({ message: err.message }, err.httpCode);
   }
   if (err instanceof Error) {
+    logger.error(
+      {
+        extra: {
+          type: 'Error',
+          stack: err.stack,
+        },
+      },
+      err.message,
+    );
     return c.json({ message: err.message }, 500);
   }
 

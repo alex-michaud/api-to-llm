@@ -1,16 +1,20 @@
 import { Ollama } from 'ollama';
 import type { ListResponse, Message, Tool } from 'ollama';
+import { z } from 'zod';
 import { config } from '../../config';
 
 const ollama = new Ollama({ host: config.OLLAMA_HOST });
 
 const defaultModel = 'qwen3:0.6b-q8_0';
 
-const validBase64Image = (imageString: string) => {
-  return /^data:image\/(png|jpeg|jpg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(
-    imageString,
-  );
-};
+const validateAndParseBase64 = z.string().refine((value) => {
+  // Check if the string is a valid base64 encoded string
+  try {
+    return btoa(atob(value)) === value; // This will throw if the string is not valid base64
+  } catch {
+    return false;
+  }
+});
 
 export const listModels = async (): Promise<ListResponse> => {
   return ollama.list();
@@ -22,9 +26,10 @@ export const generate = async ({
   suffix,
   images,
   think = false,
-  format = 'json',
+  format,
   stream,
   keep_alive = '5m',
+  temperature = 1,
 }: {
   prompt: string;
   model?: string;
@@ -34,6 +39,7 @@ export const generate = async ({
   format?: string | object;
   stream?: boolean;
   keep_alive?: string | number;
+  temperature?: number;
 }) => {
   if (typeof images === 'string') {
     images = [images];
@@ -43,7 +49,8 @@ export const generate = async ({
   }
   if (images && images.length > 0) {
     for (const image of images) {
-      if (typeof image === 'string' && !validBase64Image(image)) {
+      const parsedImage = validateAndParseBase64.safeParse(image);
+      if (!parsedImage.success) {
         throw new Error('Invalid base64 image string provided');
       }
     }
@@ -58,6 +65,9 @@ export const generate = async ({
     format,
     stream: stream ? undefined : false,
     keep_alive,
+    options: {
+      temperature,
+    },
   });
 };
 

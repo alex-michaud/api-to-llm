@@ -5,6 +5,7 @@ import { type AuthType, auth } from '../lib/auth';
 import { prisma } from '../services/database';
 import { AuthError, AuthErrorType } from '../services/error/authError';
 import { generate, listModels } from '../services/llm/ollama';
+import { logger } from '../services/logger';
 
 const llmRouter = new Hono<{ Variables: AuthType }>({
   strict: false,
@@ -46,7 +47,10 @@ llmRouter.use(async (c, next) => {
 const llmRequestSchema = z.object({
   prompt: z.string().min(1, 'Prompt is required'),
   model: z.string().optional(),
+  // images: z.union([z.array(z.string()), z.string()]).optional(),
   images: z.array(z.string()).optional(),
+  image: z.string().optional(), // for backward compatibility
+  format: z.string().optional(),
 });
 
 /**
@@ -84,7 +88,11 @@ const llmRequestSchema = z.object({
  *           items:
  *             type: string
  *             description: Base64 encoded image string (optional)
- *             example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+ *             example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
+ *         image:
+ *           type: string
+ *           description: Base64 encoded image string. Use either "images" or "image", not both (optional)
+ *           example: "iVBORw0KGgoAAAANSUhEUgAAAAUA..."
  *       required:
  *         - prompt
  */
@@ -119,15 +127,24 @@ llmRouter.post('/generate', async (c) => {
   const body = await c.req.json();
   const parsedBody = llmRequestSchema.parse(body);
 
-  const { prompt, model } = parsedBody;
+  const { prompt, model, images, image, format } = parsedBody;
 
   try {
-    const response = await generate({ prompt, model });
+    let _images = images;
+    if (!images && image) {
+      _images = [image];
+    }
+    // measure the time taken to generate the response
+    const t0 = performance.now();
+    const response = await generate({ prompt, model, images: _images, format });
+    const t1 = performance.now();
+    logger.info(`LLM response generated in ${t1 - t0} ms`);
     return c.json(response);
   } catch (error: unknown) {
+    logger.debug({ error }, 'Error generating LLM response');
     throw new HTTPException(500, {
       message: 'Internal server error',
-      cause: error,
+      cause: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });

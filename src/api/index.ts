@@ -1,12 +1,24 @@
 import { Hono } from 'hono';
 import { type AuthType, auth } from '../lib/auth';
 import { AuthError, AuthErrorType } from '../services/error/authError';
+import { logger } from '../services/logger';
 import authRouter from './auth';
 import { healthHandler, testDBHandler } from './handlers/indexHandlers';
 import llmRouter from './llm';
 
 const apiRouter = new Hono<{ Variables: AuthType }>({
   strict: false,
+});
+
+apiRouter.use(async (c, next) => {
+  logger.debug(
+    {
+      method: c.req.method,
+      path: c.req.path,
+    },
+    'API Router Middleware',
+  );
+  await next();
 });
 
 /**
@@ -55,6 +67,7 @@ apiRouter.route('/llm', llmRouter);
 // Authentication middleware
 apiRouter.use(async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  logger.debug({ session }, 'Authentication Middleware');
   if (!session) {
     throw new AuthError(AuthErrorType.UNAUTHORIZED);
   }

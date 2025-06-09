@@ -79,14 +79,14 @@ describe('LLM API endpoints', () => {
   });
 
   it('should extract text from an image', async () => {
-    const filePath =
-      './tests/assets/960px-Arc_de_Triomphe,_Paris_21_October_2010.jpeg';
+    const filePath = './tests/assets/facile/12point.png';
     const file = Bun.file(filePath);
     if (!(await file.exists())) {
       throw new Error(`File not found: ${file.name}`);
     }
     const arrayBuffer = await file.arrayBuffer();
     const imageBase64 = Buffer.from(arrayBuffer).toString('base64');
+    // console.log(imageBase64);
 
     const response = await app.request('/api/llm/generate', {
       method: 'POST',
@@ -96,7 +96,12 @@ describe('LLM API endpoints', () => {
         'x-api-key': testUserApiKey, // Include the API key in the headers
       },
       body: JSON.stringify({
-        image: imageBase64,
+        images: imageBase64,
+        model: 'qwen2.5vl:32b-q8_0',
+        // model: 'llama3.2-vision:11b',
+        // model: 'deepseek-r1:70b', // timeout
+        // model: 'qwen3:30b-a3b', // timeout
+        // model: 'gemma3:27b-it-q8_0',
         prompt: 'Extract the name of the monument in the image',
       }),
     });
@@ -107,8 +112,50 @@ describe('LLM API endpoints', () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    // console.log(data);
     expect(data).toHaveProperty('response');
     expect(data.response).toBeString();
-  });
+  }, 10000);
+
+  it('should extract text in a markdown format from an archive image', async () => {
+    // const filePath = './tests/assets/intermediaire/apnql.jpg';
+    // const filePath = './tests/assets/facile/12point.png';
+    const filePath = './tests/assets/facile/centre-gouvernance-pn.png';
+    const file = Bun.file(filePath);
+    if (!(await file.exists())) {
+      throw new Error(`File not found: ${file.name}`);
+    }
+    const arrayBuffer = await file.arrayBuffer();
+    const imageBase64 = Buffer.from(arrayBuffer).toString('base64');
+    // console.log(imageBase64);
+
+    const response = await app.request('/api/llm/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: cookie, // Use the session cookie for authentication
+        'x-api-key': testUserApiKey, // Include the API key in the headers
+      },
+      body: JSON.stringify({
+        image: imageBase64,
+        model: 'qwen2.5vl:32b-q8_0',
+        // model: 'llama3.2-vision:11b',
+        // model: 'deepseek-r1:70b', // timeout
+        // model: 'qwen3:30b-a3b', // timeout
+        // model: 'gemma3:27b-it-q8_0',
+        // prompt: 'Extract all text from this and format it using markdown. Use headings, bullet points and other markdown syntax where appropriate. Dot not use triple backticks to wrap the markdown response.',
+        prompt:
+          'You are a Markdown formatter. Output only valid raw Markdown. Do not wrap your response in a code block or backticks.',
+        // format: 'json',
+      }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to extract text: ${errorText}`);
+    }
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toHaveProperty('response');
+    expect(data.response).toBeString();
+  }, 40000);
 });

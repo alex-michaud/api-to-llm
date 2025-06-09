@@ -2,6 +2,7 @@ import pino from 'pino';
 import type { DestinationStream, LoggerOptions } from 'pino';
 
 const pinoOptionsOrStream: DestinationStream | LoggerOptions = {
+  level: 'debug',
   transport: {
     target: 'pino-pretty',
     options: {
@@ -11,4 +12,4 @@ const pinoOptionsOrStream: DestinationStream | LoggerOptions = {
   },
 };
 
-export const logger = pino();
+export const logger = pino(pinoOptionsOrStream);

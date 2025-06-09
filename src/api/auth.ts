@@ -1,13 +1,20 @@
 import { type Context, Hono } from 'hono';
 import { auth } from '../lib/auth';
 import type { AuthType } from '../lib/auth';
+import { logger } from '../services/logger';
 
 const authRouter = new Hono<{ Bindings: AuthType }>({
   strict: false,
 });
 
 authRouter.on(['POST', 'GET'], '/**', (c: Context) => {
-  console.log('Auth request:', c.req.method, c.req.path);
+  logger.debug(
+    {
+      method: c.req.method,
+      path: c.req.path,
+    },
+    'Auth request',
+  );
   return auth.handler(c.req.raw);
 });
 
